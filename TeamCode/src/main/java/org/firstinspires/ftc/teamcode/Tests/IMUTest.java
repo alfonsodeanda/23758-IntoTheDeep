@@ -52,8 +52,6 @@ public class IMUTest extends LinearOpMode {
         atrasIz.setDirection(DcMotor.Direction.REVERSE);
         atrasDe.setDirection(DcMotor.Direction.FORWARD);
 
-        resetEncoders();
-
         delanteIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         delanteDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         atrasIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -61,25 +59,10 @@ public class IMUTest extends LinearOpMode {
 
         waitForStart();
 
-        if (opModeIsActive()){
-            turnToAngle(90, 0.6);
+        while (opModeIsActive()){
+            telemetry.addData("Angle: ", getAngle());
+            telemetry.update();
         }
-    }
-
-    public void resetEncoders() {
-        delanteIz.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        delanteDe.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        atrasIz.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        atrasDe.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        delanteIz.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        delanteDe.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        atrasIz.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        atrasDe.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-    }
-
-    public void stopMotors() {
-        motorsSetPower(0, 0, 0, 0);
     }
 
     public void motorsSetPower (double powDeIz, double powDeDe, double powAtIz, double powAtDe) {
@@ -89,19 +72,8 @@ public class IMUTest extends LinearOpMode {
         atrasDe.setPower(powAtDe);
     }
 
-    public double currentAngle () {
+    public double getAngle () {
         return imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
-    }
-
-    public void turnToAngle (double targetAngle, double power) {
-        while (opModeIsActive() && Math.abs(targetAngle - currentAngle()) > 1) {
-            if (targetAngle > currentAngle()) {
-                motorsSetPower(power, -power, power, -power);
-            } else {
-                motorsSetPower(-power,  power, -power, power);
-            }
-        }
-        stopMotors();
     }
 
 }

@@ -96,6 +96,10 @@ public class imuPID extends LinearOpMode {
             if (Math.abs(error) < 2) {
                 break;
             }
+
+            telemetry.addData("Angle: ", currentAngle());
+            telemetry.addData("Power: ", power);
+            telemetry.update();
         }
         stopMotors();
     }
