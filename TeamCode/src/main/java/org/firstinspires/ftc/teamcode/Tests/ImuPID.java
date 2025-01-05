@@ -12,7 +12,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 @Autonomous (name = "IMUtestPID")
-public class imuPID extends LinearOpMode {
+public class ImuPID extends LinearOpMode {
     private DcMotor delanteIz, delanteDe, atrasIz, atrasDe;
     public IMU imu;
 
@@ -56,10 +56,17 @@ public class imuPID extends LinearOpMode {
         atrasIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         atrasDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
+        imu.resetYaw();
+
+        telemetry.addData("Angle: ", getAngle());
+        telemetry.update();
+
         waitForStart();
 
         if (opModeIsActive()){
-            turnToAnglePID(90, 0.6);
+            turnToAnglePID(-90, 0.6);
+            stopMotors();
+            //sleep(10000);
         }
     }
 
@@ -74,30 +81,33 @@ public class imuPID extends LinearOpMode {
         atrasDe.setPower(powAtDe);
     }
 
-    public double currentAngle () {
+    public double getAngle () {
         return imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
     }
 
     public void turnToAnglePID (double targetAngle, double maxPower) {
-        double integral = 0, lastError = 0;
-        double kP = 0.01, kI = 0, kD = 0;
+        //double integral = 0, lastError = 0;
+        double kP = 0.06, kI = 0, kD = 0;
 
         while (opModeIsActive()) {
-            double error = targetAngle - currentAngle();
-            integral += error;
-            double derivative = error - lastError;
-            double power = (kP * error) + (kI * integral) + (kD * derivative);
+            double currentAngle = getAngle();
+            double error = targetAngle - currentAngle;
+
+            //integral += error;
+            //double derivative = error - lastError;
+            double power = (kP * error); // + (kI * integral) + (kD * derivative);
             power = Math.max(-maxPower, Math.min(power, maxPower));
 
-            motorsSetPower(power, -power, power, -power);
+            motorsSetPower(-power, power, -power, power);
 
-            lastError = error;
+            //lastError = error;
 
-            if (Math.abs(error) < 2) {
-                break;
-            }
+            //if(currentAngle == targetAngle ||
+            //        currentAngle >= (Math.abs(targetAngle) - 0.02) ||
+            //        currentAngle <= (Math.abs(targetAngle) + 0.02)) break;
 
-            telemetry.addData("Angle: ", currentAngle());
+            telemetry.addData("Angle: ", getAngle());
+            telemetry.addData("Error: ", error);
             telemetry.addData("Power: ", power);
             telemetry.update();
         }

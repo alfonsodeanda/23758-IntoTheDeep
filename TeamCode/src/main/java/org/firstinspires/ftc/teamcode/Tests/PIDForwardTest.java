@@ -38,7 +38,7 @@ public class PIDForwardTest extends LinearOpMode {
         waitForStart();
 
         if (opModeIsActive()){
-            PIDForward(50, 0.6);
+            PIDForward(60.96, 0.4);
         }
     }
 
@@ -74,10 +74,10 @@ public class PIDForwardTest extends LinearOpMode {
         resetEncoders();
         int targetPos = (int) (cm/cmByTick);
 
-        double integral = 0;
-        double lastError = 0;
+        //double integral = 0;
+        //double lastError = 0;
 
-        double kP = 0.01;
+        double kP = 0.02;
         double kI = 0;
         double kD = 0;
 
@@ -85,24 +85,24 @@ public class PIDForwardTest extends LinearOpMode {
             int currentPos = encoderAverage();
 
             double error = targetPos - currentPos;
-            integral += error;
-            double derivative = error - lastError;
+            //integral += error;
+            //double derivative = error - lastError;
 
-            double power = (kP * error) + (kI * integral) + (kD * derivative);
+            double power = (kP * error); // + (kI * integral) + (kD * derivative);
             power = Math.max(-maxPower, Math.min(power, maxPower));
 
             motorsSetPower(power, power, power, power);
 
-            lastError = error;
+            //lastError = error;
 
-            if (Math.abs(error) < 2) {
-                break;
-            }
+            //if(targetPos==currentPos) break;
 
             telemetry.addData("Encoders", "delanteDe: %d , delanteIz: %d , atrasDe: %d , atrasIz: %d",
                     delanteDe.getCurrentPosition(), delanteIz.getCurrentPosition(),
                     atrasDe.getCurrentPosition(), atrasIz.getCurrentPosition());
             telemetry.addData("Average encoder value: ", encoderAverage());
+            telemetry.addData("Target position: ", targetPos);
+            telemetry.addData("Error: ", error);
             telemetry.addData("Power: ", power);
             telemetry.update();
         }

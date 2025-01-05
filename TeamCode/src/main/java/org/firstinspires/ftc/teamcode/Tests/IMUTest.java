@@ -60,6 +60,7 @@ public class IMUTest extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()){
+
             telemetry.addData("Angle: ", getAngle());
             telemetry.update();
         }
