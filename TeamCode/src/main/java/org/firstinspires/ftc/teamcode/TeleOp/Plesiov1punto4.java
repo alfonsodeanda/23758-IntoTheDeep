@@ -1,3 +1,5 @@
+//hola. este es el programa del teleop
+
 package org.firstinspires.ftc.teamcode.TeleOp;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -34,7 +36,6 @@ public class Plesiov1punto4 extends LinearOpMode {
     final double intake_close = 0.55;
 
     private static final int maxEncoderRiel = -1700; //constante de el numero maximo de ticks que se puede recorrer el riel
-    private static final int maxOuttake = -150;
 
     @Override
     public void runOpMode() {
@@ -47,7 +48,7 @@ public class Plesiov1punto4 extends LinearOpMode {
                 "Joystick izquierdo: muñeca intake. Joystick derecho: muñeca outtake" +
                 "Boton Y: Garra Intake. Boton X: Garra outtake. Boton A: Transfer de piezas" +
                 "DPAD Arriba: Elevador hacia arriba. DPAD Abajo: Elevador hacia abajo" +
-                "DPAD izquierda: Extender riel. DPAD Derecha: Contraer Riel");
+                "DPAD derecha: Extender riel. DPAD izquierda: Contraer Riel");
         telemetry.update();
 
         //Motores chasis
@@ -279,13 +280,13 @@ public class Plesiov1punto4 extends LinearOpMode {
         }
 
         if(transferButtonState){
-            Muñeca.setPosition(0.74); //cerrar intake (apretao)
+            Muñeca.setPosition(0.55); //cerrar intake (apretao)
 
 
             //tod0 este bloque es para mover el riel a su posicion inicial
             Intake.setTargetPosition(0);
             Intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            Intake.setPower(0.8);
+            Intake.setPower(0.9);
 
             while (opModeIsActive() && Intake.isBusy()) {
                 telemetry.addData("Encoder Riel:", Intake.getCurrentPosition());
@@ -296,10 +297,28 @@ public class Plesiov1punto4 extends LinearOpMode {
             Intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
 
-            Brazo.setPower(0.60);
+            Intake.setTargetPosition(-120);
+            Intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            Intake.setPower(0.9);
+
+            while (opModeIsActive() && Intake.isBusy()) {
+                telemetry.addData("Encoder Riel:", Intake.getCurrentPosition());
+                telemetry.update();
+            }
+
+            Intake.setPower(0);
+            Intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+
+            Brazo.setPower(0.675);
             sleep(1950); //bajar muneca de intake
 
-            Muñeca.setPosition(0.74); //seguir apretando
+            //Brazo.setPower(-0.5);
+            //sleep(180);
+            //Brazo.setPower(0.5);
+            //sleep(180);
+
+            Muñeca.setPosition(0.55); //seguir apretando
             Brazo.setPower(0);
 
             ServoOuttake.setPosition(0.35); //abrir ligeramente el outtake
@@ -309,7 +328,7 @@ public class Plesiov1punto4 extends LinearOpMode {
             Outtake.setTargetPosition(0);
             Outtake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             sleep(800);
-            Outtake.setPower(0.4);
+            Outtake.setPower(0.25);
 
             while (opModeIsActive() && Outtake.isBusy()) {
                 telemetry.addData("Encoder Outtake:", Outtake.getCurrentPosition());
@@ -324,9 +343,21 @@ public class Plesiov1punto4 extends LinearOpMode {
 
             ServoOuttake.setPosition(0.18); //cerrar el outtake
 
+            Intake.setTargetPosition(-200);
+            Intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            Intake.setPower(0.9);
+
+            while (opModeIsActive() && Intake.isBusy()) {
+                telemetry.addData("Encoder Riel:", Intake.getCurrentPosition());
+                telemetry.update();
+            }
+
+            Intake.setPower(0);
+            Intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
 
             //tod0 este bloque es para abrir la muneca
-            Outtake.setTargetPosition(-150);
+            /*Outtake.setTargetPosition(-120);
             Outtake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             sleep(500);
             Outtake.setPower(0.6);
@@ -337,7 +368,7 @@ public class Plesiov1punto4 extends LinearOpMode {
             }
 
             Outtake.setPower(0);
-            Outtake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            Outtake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);*/
 
 
             Muñeca.setPosition(0.55); //cerrar intake
@@ -353,10 +384,10 @@ public class Plesiov1punto4 extends LinearOpMode {
         int outtakeCurrentPos = Outtake.getCurrentPosition();
 
         //si presionas el boton de adelante pero se pasa de la distancia maxima
-        if(y < 0.0 && outtakeCurrentPos < maxOuttake){
-            Outtake.setPower(0);
-            return; //finalizar la funcion aqui
-        }
+//        if(y < 0.0 && outtakeCurrentPos < maxOuttake){
+//            Outtake.setPower(0);
+//            return; //finalizar la funcion aqui
+//        }
 
         if(y < 0.0){
             Outtake.setPower(-0.3);

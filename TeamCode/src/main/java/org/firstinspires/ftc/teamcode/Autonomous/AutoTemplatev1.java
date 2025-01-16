@@ -1,4 +1,5 @@
 package org.firstinspires.ftc.teamcode.Autonomous;
+
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -25,21 +26,11 @@ public class AutoTemplatev1 extends LinearOpMode {
     private Servo Muñeca = null;
     private CRServo Brazo = null;
     public IMU imu;
-
-    //variables para el Toggle en las garras de intake y outtake
-    private boolean outtakeMode = false; //para saber el modo en el que esta el outtake (abrir/cerrar)
-    private boolean outtakeButtonState = false; //para saber si el boton ha sido presionado
-    private boolean intakeMode = false; //para saber el modo en el que esta el intake(abrir/cerrar)
-    private boolean intakeButtonState = false; //para saber si el boton ha sido presionado
-    private boolean transferButtonState = false; //para saber si el boton ha sido presionado
-
-
     final double outtake_open = 0.5;
     final double outtake_close = 0.2;
 
     final double intake_open = 0.4;
     final double intake_close = 0.55;
-
     private static final int maxEncoderRiel = -1700; //constante de el numero maximo de ticks que se puede recorrer el riel
     private static final int maxOuttake = -150;
 
@@ -84,8 +75,10 @@ public class AutoTemplatev1 extends LinearOpMode {
         );
 
         // Direcciones
-        DelanteIz.setDirection(DcMotor.Direction.REVERSE);
-        AtrasIz.setDirection(DcMotor.Direction.REVERSE);
+        DelanteIz.setDirection(DcMotor.Direction.FORWARD);
+        DelanteDe.setDirection(DcMotor.Direction.REVERSE);
+        AtrasIz.setDirection(DcMotor.Direction.FORWARD);
+        AtrasDe.setDirection(DcMotor.Direction.REVERSE);
 
         // Comportamiento al soltar
         zeroPowerBehaviorBrake();
@@ -100,7 +93,9 @@ public class AutoTemplatev1 extends LinearOpMode {
 
         //Programa principal
         if (opModeIsActive()) {
-            moveForward(60.96, 0.6);
+            //moveForward(60.96, 0.6);
+            DelanteDe.setPower(1);
+            sleep(1000);
         }
     }
 
@@ -251,6 +246,20 @@ public class AutoTemplatev1 extends LinearOpMode {
         }
 
         Outtake.setPower(0);
+    }
+
+    public void intake(double pos){
+        Muñeca.setPosition(pos);
+    }
+
+    public void outtake(double pos){
+        ServoOuttake.setPosition(pos);
+    }
+
+    public void intakeWrist(long time, double pow){
+        Brazo.setPower(pow);
+        sleep(time);
+        Brazo.setPower(0);
     }
 
 }

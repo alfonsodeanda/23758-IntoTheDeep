@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 
 @Autonomous (name = "PID Adelante")
 public class PIDForwardTest extends LinearOpMode {
-    private DcMotor delanteIz, delanteDe, atrasIz, atrasDe; //motores
+    private DcMotor DelanteIz, DelanteDe, AtrasIz, AtrasDe; //motores
 
     private static final double cmByTick = 0.053855874; //constante que define cuantos cm hay en cada tick de los motores el chasis
 
@@ -16,15 +16,15 @@ public class PIDForwardTest extends LinearOpMode {
         telemetry.addLine("Prueba de control PID para ir adelante de forma precisa");
         telemetry.update();
 
-        delanteIz = hardwareMap.get(DcMotor.class, "delanteIz");
-        delanteDe = hardwareMap.get(DcMotor.class, "delanteDe");
-        atrasIz  = hardwareMap.get(DcMotor.class, "atrasIz");
-        atrasDe = hardwareMap.get(DcMotor.class, "atrasDe");
+        DelanteIz = hardwareMap.get(DcMotor.class, "DelanteIz");
+        DelanteDe = hardwareMap.get(DcMotor.class, "DelanteDe");
+        AtrasIz  = hardwareMap.get(DcMotor.class, "AtrasIz");
+        AtrasDe = hardwareMap.get(DcMotor.class, "AtrasDe");
 
-        delanteIz.setDirection(DcMotor.Direction.REVERSE);
-        delanteDe.setDirection(DcMotor.Direction.FORWARD);
-        atrasIz.setDirection(DcMotor.Direction.REVERSE);
-        atrasDe.setDirection(DcMotor.Direction.FORWARD);
+        DelanteIz.setDirection(DcMotor.Direction.FORWARD);
+        DelanteDe.setDirection(DcMotor.Direction.REVERSE);
+        AtrasIz.setDirection(DcMotor.Direction.FORWARD);
+        AtrasDe.setDirection(DcMotor.Direction.REVERSE);
 
         resetEncoders();
 
@@ -42,34 +42,34 @@ public class PIDForwardTest extends LinearOpMode {
     }
 
     public void resetEncoders() {
-        delanteIz.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        delanteDe.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        atrasIz.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        atrasDe.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        DelanteIz.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        DelanteDe.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        AtrasIz.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        AtrasDe.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        delanteIz.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        delanteDe.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        atrasIz.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        atrasDe.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        DelanteIz.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        DelanteDe.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        AtrasIz.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        AtrasDe.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
     public void zeroPowerBehaviorBrake() {
-        delanteIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        delanteDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        atrasIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        atrasDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        DelanteIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        DelanteDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        AtrasIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        AtrasDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
     public void motorsSetPower (double powDeIz, double powDeDe, double powAtIz, double powAtDe) {
-        delanteIz.setPower(powDeIz);
-        delanteDe.setPower(powDeDe);
-        atrasIz.setPower(powAtIz);
-        atrasDe.setPower(powAtDe);
+        DelanteIz.setPower(powDeIz);
+        DelanteDe.setPower(powDeDe);
+        AtrasIz.setPower(powAtIz);
+        AtrasDe.setPower(powAtDe);
     }
 
     public int encoderAverage () {
-        return (delanteIz.getCurrentPosition() + delanteDe.getCurrentPosition() +
-                atrasIz.getCurrentPosition() + atrasDe.getCurrentPosition()) / 4;
+        return (DelanteIz.getCurrentPosition() + DelanteDe.getCurrentPosition() +
+                AtrasIz.getCurrentPosition() + AtrasDe.getCurrentPosition()) / 4;
     }
 
     public void PIDForward (double cm, double maxPower) {
@@ -100,8 +100,8 @@ public class PIDForwardTest extends LinearOpMode {
             //if(targetPos==currentPos) break;
 
             telemetry.addData("Encoders", "delanteDe: %d , delanteIz: %d , atrasDe: %d , atrasIz: %d",
-                    delanteDe.getCurrentPosition(), delanteIz.getCurrentPosition(),
-                    atrasDe.getCurrentPosition(), atrasIz.getCurrentPosition());
+                    DelanteDe.getCurrentPosition(), DelanteIz.getCurrentPosition(),
+                    AtrasDe.getCurrentPosition(), AtrasIz.getCurrentPosition());
             telemetry.addData("Average encoder value: ", encoderAverage());
             telemetry.addData("Target position: ", targetPos);
             telemetry.addData("Error: ", error);
