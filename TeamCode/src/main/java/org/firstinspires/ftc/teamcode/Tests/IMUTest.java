@@ -7,13 +7,9 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-
 @Autonomous (name = "IMUtest")
 public class IMUTest extends LinearOpMode {
-    private DcMotor delanteIz, delanteDe, atrasIz, atrasDe;
+    private DcMotor DelanteIz, DelanteDe, AtrasIz, AtrasDe;
 
     public IMU imu;
 
@@ -25,41 +21,35 @@ public class IMUTest extends LinearOpMode {
         telemetry.addLine("Prueba de uso del girscopio");
         telemetry.update();
 
-        delanteIz = hardwareMap.get(DcMotor.class, "delanteIz");
-        delanteDe = hardwareMap.get(DcMotor.class, "delanteDe");
-        atrasIz  = hardwareMap.get(DcMotor.class, "atrasIz");
-        atrasDe = hardwareMap.get(DcMotor.class, "atrasDe");
+        DelanteIz = hardwareMap.get(DcMotor.class, "DelanteIz");
+        DelanteDe = hardwareMap.get(DcMotor.class, "DelanteDe");
+        AtrasIz  = hardwareMap.get(DcMotor.class, "AtrasIz");
+        AtrasDe = hardwareMap.get(DcMotor.class, "AtrasDe");
 
         imu = hardwareMap.get(IMU.class, "imu");
         imu.initialize(
                 new IMU.Parameters(
-                    new RevHubOrientationOnRobot(
-                            new Orientation(
-                                    AxesReference.INTRINSIC,
-                                    AxesOrder.ZYX,
-                                    AngleUnit.DEGREES,
-                                    0,
-                                    0,
-                                    60,
-                                    0
-                            )
-                    )
+                        new RevHubOrientationOnRobot(
+                                RevHubOrientationOnRobot.LogoFacingDirection.LEFT,
+                                RevHubOrientationOnRobot.UsbFacingDirection.DOWN
+                        )
                 )
         );
 
-        delanteIz.setDirection(DcMotor.Direction.REVERSE);
-        delanteDe.setDirection(DcMotor.Direction.FORWARD);
-        atrasIz.setDirection(DcMotor.Direction.REVERSE);
-        atrasDe.setDirection(DcMotor.Direction.FORWARD);
+        DelanteIz.setDirection(DcMotor.Direction.REVERSE);
+        DelanteDe.setDirection(DcMotor.Direction.FORWARD);
+        AtrasIz.setDirection(DcMotor.Direction.REVERSE);
+        AtrasDe.setDirection(DcMotor.Direction.FORWARD);
 
-        delanteIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        delanteDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        atrasIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        atrasDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        DelanteIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        DelanteDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        AtrasIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        AtrasDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         waitForStart();
 
         while (opModeIsActive()){
+            motorsSetPower(-0.3, 0.3, -0.3, 0.3);
 
             telemetry.addData("Angle: ", getAngle());
             telemetry.update();
@@ -67,10 +57,10 @@ public class IMUTest extends LinearOpMode {
     }
 
     public void motorsSetPower (double powDeIz, double powDeDe, double powAtIz, double powAtDe) {
-        delanteIz.setPower(powDeIz);
-        delanteDe.setPower(powDeDe);
-        atrasIz.setPower(powAtIz);
-        atrasDe.setPower(powAtDe);
+        DelanteIz.setPower(powDeIz);
+        DelanteDe.setPower(powDeDe);
+        AtrasIz.setPower(powAtIz);
+        AtrasDe.setPower(powAtDe);
     }
 
     public double getAngle () {

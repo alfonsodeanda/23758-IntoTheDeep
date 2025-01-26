@@ -1,15 +1,17 @@
 package org.firstinspires.ftc.teamcode.Tests;
 
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.CRServo;
 
-@Autonomous(name = "PRUEBA ENERO")
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+
+@Autonomous(name = "AUTO TEMPLATE FINAL TOLUCA")
 public class Ayudanosemueveelrobotneauto extends LinearOpMode {
-    private ElapsedTime runtime = new ElapsedTime();
     private DcMotor DelanteIz, DelanteDe, AtrasIz, AtrasDe;
     private DcMotor Intake = null;
     private DcMotor ElevadorIz = null;
@@ -18,14 +20,7 @@ public class Ayudanosemueveelrobotneauto extends LinearOpMode {
     private Servo ServoOuttake = null;
     private Servo Muñeca = null;
     private CRServo Brazo = null;
-
-    //variables para el Toggle en las garras de intake y outtake
-    private boolean outtakeMode = false; //para saber el modo en el que esta el outtake (abrir/cerrar)
-    private boolean outtakeButtonState = false; //para saber si el boton ha sido presionado
-    private boolean intakeMode = false; //para saber el modo en el que esta el intake(abrir/cerrar)
-    private boolean intakeButtonState = false; //para saber si el boton ha sido presionado
-    private boolean transferButtonState = false; //para saber si el boton ha sido presionado
-
+    public IMU imu;
 
     final double outtake_open = 0.5;
     final double outtake_close = 0.2;
@@ -58,6 +53,16 @@ public class Ayudanosemueveelrobotneauto extends LinearOpMode {
         Muñeca = hardwareMap.get(Servo.class, "muñeca"); //servo de la garra del intake
         Brazo = hardwareMap.get(CRServo.class, "brazo"); //servo de la muneca del intake
 
+        imu = hardwareMap.get(IMU.class, "imu");
+        imu.initialize(
+                new IMU.Parameters(
+                        new RevHubOrientationOnRobot(
+                                RevHubOrientationOnRobot.LogoFacingDirection.LEFT,
+                                RevHubOrientationOnRobot.UsbFacingDirection.DOWN
+                        )
+                )
+        );
+
         // Direcciones
         DelanteIz.setDirection(DcMotor.Direction.FORWARD);
         DelanteDe.setDirection(DcMotor.Direction.REVERSE);
@@ -68,21 +73,24 @@ public class Ayudanosemueveelrobotneauto extends LinearOpMode {
         // Comportamiento al soltar
         zeroPowerBehaviorBrake();
 
-        resetEncoders();
+        resetChassisEncoders();
+        resetMechEncoders();
+
+        imu.resetYaw();
 
         waitForStart();
-        runtime.reset();
 
         //Programa principal, se repite por siempre
         if (opModeIsActive()) {
-            DelanteDe.setPower(1);
-            sleep(1000);
+            outtake(outtake_close);
+            intake(intake_close);
 
-            //imprimir ciertos valores para debuggear
-            telemetry.addData("Runtime", runtime.seconds());
-            telemetry.addData("Riel", Intake.getCurrentPosition());
-            telemetry.addData("Muñeca outtake:", Outtake.getCurrentPosition());
-            telemetry.update();
+            goForward(60.96, 0.3);
+            turnToAngle(45, 0.5);
+            goForward(20, 0.3);
+            elevador(-1000, 1);
+            outtakeWrist(-140, 0.6);
+            outtake(outtake_open);
         }
     }
 
@@ -101,7 +109,19 @@ public class Ayudanosemueveelrobotneauto extends LinearOpMode {
     }
 
     //se configuran los encoders para poder acceder a las lecturas y configurar limites
-    public void resetEncoders() {
+    public void resetChassisEncoders() {
+        DelanteIz.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        DelanteDe.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        AtrasIz.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        AtrasDe.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        DelanteIz.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        DelanteDe.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        AtrasIz.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        AtrasDe.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public void resetMechEncoders() {
         Intake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         ElevadorIz.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         ElevadorDe.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -111,6 +131,10 @@ public class Ayudanosemueveelrobotneauto extends LinearOpMode {
         ElevadorIz.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         ElevadorDe.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         Outtake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public double getAngle () {
+        return imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
     }
 
     public void motorsSetPower (double powDeIz, double powDeDe, double powAtIz, double powAtDe) {
@@ -125,14 +149,11 @@ public class Ayudanosemueveelrobotneauto extends LinearOpMode {
                 AtrasIz.getCurrentPosition() + AtrasDe.getCurrentPosition()) / 4;
     }
 
-    public void PIDForward (double cm, double maxPower) {
-        resetEncoders();
+    public void goForward (double cm, double maxPower) {
+        resetChassisEncoders();
         int targetPos = (int) (cm/cmByTick);
 
-        //double integral = 0;
-        //double lastError = 0;
-
-        double kP = 0.02;
+        double kP = 0.05;
         double kI = 0;
         double kD = 0;
 
@@ -140,17 +161,13 @@ public class Ayudanosemueveelrobotneauto extends LinearOpMode {
             int currentPos = encoderAverage();
 
             double error = targetPos - currentPos;
-            //integral += error;
-            //double derivative = error - lastError;
 
-            double power = (kP * error); // + (kI * integral) + (kD * derivative);
+            double power = (kP * error);
             power = Math.max(-maxPower, Math.min(power, maxPower));
 
             motorsSetPower(power, power, power, power);
 
-            //lastError = error;
-
-            //if(targetPos==currentPos) break;
+            if(Math.abs(error) <=1) break;
 
             telemetry.addData("Encoders", "delanteDe: %d , delanteIz: %d , atrasDe: %d , atrasIz: %d",
                     DelanteDe.getCurrentPosition(), DelanteIz.getCurrentPosition(),
@@ -162,6 +179,85 @@ public class Ayudanosemueveelrobotneauto extends LinearOpMode {
             telemetry.update();
         }
         stopMotors();
+    }
+
+    public void turnToAngle (double targetAngle, double maxPower) {
+        double kP = 0.1;
+
+        while (opModeIsActive()) {
+            double currentAngle = getAngle();
+            double error = targetAngle - currentAngle;
+            double power = (kP * error);
+            power = Math.max(-maxPower, Math.min(power, maxPower));
+
+            motorsSetPower(-power, power, -power, power);
+
+            if(Math.abs(error) <= 0.01) break;
+
+            telemetry.addData("Angle: ", getAngle());
+            telemetry.addData("Error: ", error);
+            telemetry.addData("Power: ", power);
+            telemetry.update();
+        }
+        stopMotors();
+    }
+
+    public void elevador(int pos, double power) {
+        ElevadorIz.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        ElevadorDe.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        ElevadorIz.setTargetPosition(pos);
+        ElevadorDe.setTargetPosition(pos);
+        ElevadorIz.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        ElevadorDe.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        ElevadorIz.setPower(power);
+        ElevadorDe.setPower(power);
+
+        while (opModeIsActive() && (ElevadorIz.isBusy() || ElevadorDe.isBusy()) ) {
+            telemetry.addData("Elevador", "Posición: %d", ElevadorIz.getCurrentPosition());
+        }
+        telemetry.update();
+        ElevadorIz.setPower(0);
+        ElevadorDe.setPower(0);
+    }
+
+    public void riel(int pos, double power) {
+        Intake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        Intake.setTargetPosition(pos);
+        Intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Intake.setPower(power);
+
+        while (opModeIsActive() && Intake.isBusy()) {
+            telemetry.addData("Riel", "Posición: %d", Intake.getCurrentPosition());
+        }
+
+        Intake.setPower(0);
+    }
+
+    public void outtakeWrist(int pos, double power) {
+        Outtake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        Outtake.setTargetPosition(pos);
+        Outtake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Outtake.setPower(power);
+
+        while (opModeIsActive() && Outtake.isBusy()) {
+            telemetry.addData("Muñeca Outtake", "Posición: %d", Outtake.getCurrentPosition());
+        }
+
+        Outtake.setPower(0);
+    }
+
+    public void intake(double pos){
+        Muñeca.setPosition(pos);
+    }
+
+    public void outtake(double pos){
+        ServoOuttake.setPosition(pos);
+    }
+
+    public void intakeWrist(long time, double pow){
+        Brazo.setPower(pow);
+        sleep(time);
+        Brazo.setPower(0);
     }
 
 }

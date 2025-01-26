@@ -13,7 +13,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 @Autonomous (name = "IMUtestPID")
 public class ImuPID extends LinearOpMode {
-    private DcMotor delanteIz, delanteDe, atrasIz, atrasDe;
+    private DcMotor DelanteIz, DelanteDe, AtrasIz, AtrasDe;
     public IMU imu;
 
     @Override
@@ -24,37 +24,30 @@ public class ImuPID extends LinearOpMode {
         telemetry.addLine("Prueba de uso del girscopio con PID");
         telemetry.update();
 
-        delanteIz = hardwareMap.get(DcMotor.class, "delanteIz");
-        delanteDe = hardwareMap.get(DcMotor.class, "delanteDe");
-        atrasIz  = hardwareMap.get(DcMotor.class, "atrasIz");
-        atrasDe = hardwareMap.get(DcMotor.class, "atrasDe");
+        DelanteIz = hardwareMap.get(DcMotor.class, "DelanteIz");
+        DelanteDe = hardwareMap.get(DcMotor.class, "DelanteDe");
+        AtrasIz  = hardwareMap.get(DcMotor.class, "AtrasIz");
+        AtrasDe = hardwareMap.get(DcMotor.class, "AtrasDe");
 
         imu = hardwareMap.get(IMU.class, "imu");
         imu.initialize(
                 new IMU.Parameters(
                         new RevHubOrientationOnRobot(
-                                new Orientation(
-                                        AxesReference.INTRINSIC,
-                                        AxesOrder.ZYX,
-                                        AngleUnit.DEGREES,
-                                        0,
-                                        0,
-                                        60,
-                                        0
-                                )
+                                RevHubOrientationOnRobot.LogoFacingDirection.LEFT,
+                                RevHubOrientationOnRobot.UsbFacingDirection.DOWN
                         )
                 )
         );
 
-        delanteIz.setDirection(DcMotor.Direction.REVERSE);
-        delanteDe.setDirection(DcMotor.Direction.FORWARD);
-        atrasIz.setDirection(DcMotor.Direction.REVERSE);
-        atrasDe.setDirection(DcMotor.Direction.FORWARD);
+        DelanteIz.setDirection(DcMotor.Direction.REVERSE);
+        DelanteDe.setDirection(DcMotor.Direction.FORWARD);
+        AtrasIz.setDirection(DcMotor.Direction.REVERSE);
+        AtrasDe.setDirection(DcMotor.Direction.FORWARD);
 
-        delanteIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        delanteDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        atrasIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        atrasDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        DelanteIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        DelanteDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        AtrasIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        AtrasDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         imu.resetYaw();
 
@@ -66,7 +59,6 @@ public class ImuPID extends LinearOpMode {
         if (opModeIsActive()){
             turnToAnglePID(-90, 0.6);
             stopMotors();
-            //sleep(10000);
         }
     }
 
@@ -75,10 +67,10 @@ public class ImuPID extends LinearOpMode {
     }
 
     public void motorsSetPower (double powDeIz, double powDeDe, double powAtIz, double powAtDe) {
-        delanteIz.setPower(powDeIz);
-        delanteDe.setPower(powDeDe);
-        atrasIz.setPower(powAtIz);
-        atrasDe.setPower(powAtDe);
+        DelanteIz.setPower(powDeIz);
+        DelanteDe.setPower(powDeDe);
+        AtrasIz.setPower(powAtIz);
+        AtrasDe.setPower(powAtDe);
     }
 
     public double getAngle () {
@@ -86,25 +78,17 @@ public class ImuPID extends LinearOpMode {
     }
 
     public void turnToAnglePID (double targetAngle, double maxPower) {
-        //double integral = 0, lastError = 0;
-        double kP = 0.06, kI = 0, kD = 0;
+        double kP = 0.1;
 
         while (opModeIsActive()) {
             double currentAngle = getAngle();
             double error = targetAngle - currentAngle;
-
-            //integral += error;
-            //double derivative = error - lastError;
-            double power = (kP * error); // + (kI * integral) + (kD * derivative);
+            double power = (kP * error);
             power = Math.max(-maxPower, Math.min(power, maxPower));
 
-            motorsSetPower(-power, power, -power, power);
+            motorsSetPower(power, -power, power, -power);
 
-            //lastError = error;
-
-            //if(currentAngle == targetAngle ||
-            //        currentAngle >= (Math.abs(targetAngle) - 0.02) ||
-            //        currentAngle <= (Math.abs(targetAngle) + 0.02)) break;
+            if(Math.abs(error) <= 0.001) break;
 
             telemetry.addData("Angle: ", getAngle());
             telemetry.addData("Error: ", error);

@@ -75,6 +75,7 @@ public class NetAutoTimeAndEncoders extends LinearOpMode {
         stopMotors();
     }
 
+
     public void strafe(long time, double power, int leftRight) {
         if(leftRight==1){ //si el primer parametro de la funcion es 1, strafea a la derecha
             delanteIz.setPower(power+0.3);

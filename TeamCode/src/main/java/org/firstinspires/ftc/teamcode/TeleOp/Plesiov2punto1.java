@@ -1,5 +1,3 @@
-//hola. este es el programa del teleop
-
 package org.firstinspires.ftc.teamcode.TeleOp;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -7,35 +5,34 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.CRServo;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-@TeleOp(name = "Plesiov1.4 TELEOP FINAL TOLUCA")
-public class Plesiov1punto4 extends LinearOpMode {
+@TeleOp(name = "Plesiov2 | Teleop Ferrería")
+public class Plesiov2punto1 extends LinearOpMode {
+    private AtomicBoolean isTransferRunning = new AtomicBoolean(false); // Bandera para controlar el estado de la rutina
+
     private ElapsedTime runtime = new ElapsedTime();
     private DcMotor DelanteIz, DelanteDe, AtrasIz, AtrasDe;
     private DcMotor Intake = null;
-    private DcMotor ElevadorIz = null;
-    private DcMotor ElevadorDe = null;
+    private DcMotor Elevador = null;
+    private DcMotor IntakeWrist = null;
     private DcMotor Outtake = null;
     private Servo ServoOuttake = null;
     private Servo Muñeca = null;
-    private CRServo Brazo = null;
+
 
     //variables para el Toggle en las garras de intake y outtake
     private boolean outtakeMode = false; //para saber el modo en el que esta el outtake (abrir/cerrar)
     private boolean outtakeButtonState = false; //para saber si el boton ha sido presionado
     private boolean intakeMode = false; //para saber el modo en el que esta el intake(abrir/cerrar)
     private boolean intakeButtonState = false; //para saber si el boton ha sido presionado
-    private boolean transferButtonState = false; //para saber si el boton ha sido presionado
+    public boolean transferButtonState = false; //para saber si el boton ha sido presionado
 
 
     final double outtake_open = 0.5;
     final double outtake_close = 0.2;
-
     final double intake_open = 0.4;
     final double intake_close = 0.55;
-
-    private static final int maxEncoderRiel = -1700; //constante de el numero maximo de ticks que se puede recorrer el riel
 
     @Override
     public void runOpMode() {
@@ -48,7 +45,7 @@ public class Plesiov1punto4 extends LinearOpMode {
                 "Joystick izquierdo: muñeca intake. Joystick derecho: muñeca outtake" +
                 "Boton Y: Garra Intake. Boton X: Garra outtake. Boton A: Transfer de piezas" +
                 "DPAD Arriba: Elevador hacia arriba. DPAD Abajo: Elevador hacia abajo" +
-                "DPAD derecha: Extender riel. DPAD izquierda: Contraer Riel");
+                "DPAD izquierda: Extender riel. DPAD Derecha: Contraer Riel");
         telemetry.update();
 
         //Motores chasis
@@ -57,14 +54,13 @@ public class Plesiov1punto4 extends LinearOpMode {
         AtrasIz = hardwareMap.get(DcMotor.class, "AtrasIz");
         AtrasDe = hardwareMap.get(DcMotor.class, "AtrasDe");
         //Motores mecanismos
-        ElevadorIz = hardwareMap.get(DcMotor.class, "elevadorIz"); //Uno de los dos motores del elevador
-        ElevadorDe = hardwareMap.get(DcMotor.class, "elevadorDe");
+        Elevador = hardwareMap.get(DcMotor.class, "elevador"); //Uno de los dos motores del elevador
+        IntakeWrist = hardwareMap.get(DcMotor.class, "intakeWrist");
         Intake = hardwareMap.get(DcMotor.class, "Intake"); //Motor del riel
         Outtake = hardwareMap.get(DcMotor.class, "outtake"); //Motor de la muñeca del outtake
         //Servos mecanismos
         ServoOuttake = hardwareMap.get(Servo.class, "garraO"); //servo de la garra del outtake
         Muñeca = hardwareMap.get(Servo.class, "muñeca"); //servo de la garra del intake
-        Brazo = hardwareMap.get(CRServo.class, "brazo"); //servo de la muneca del intake
 
         // Direcciones
         DelanteIz.setDirection(DcMotor.Direction.FORWARD);
@@ -73,9 +69,7 @@ public class Plesiov1punto4 extends LinearOpMode {
         AtrasDe.setDirection(DcMotor.Direction.REVERSE);
         Muñeca.setDirection(Servo.Direction.REVERSE);
 
-        // Comportamiento al soltar
         zeroPowerBehaviorBrake();
-
         resetEncoders();
 
         waitForStart();
@@ -83,22 +77,29 @@ public class Plesiov1punto4 extends LinearOpMode {
 
         //Programa principal, se repite por siempre
         while (opModeIsActive()) {
-            chasis(gamepad1.left_stick_x, -gamepad1.left_stick_y, gamepad1.right_stick_x, 0.9);
-
+            chassis(gamepad1.left_stick_x, -gamepad1.left_stick_y, gamepad1.right_stick_x, 0.9);
             intakeWrist(gamepad2.left_stick_y);
             intakeToggle(gamepad2.y); //garra elevador
             outtakeToggle(gamepad2.x); //brazo
             riel(gamepad2.dpad_right, gamepad2.dpad_left);
-            outtakeWrist(gamepad2.right_stick_y, 0.2); //mover brazo
-            transfer(gamepad2.a); //Elevador
+            outtakeWrist(gamepad2.right_stick_y); //mover brazo
             elevador(gamepad2.dpad_up, gamepad2.dpad_down);
-            //outtake(gamepad2.x, gamepad2.b);
-            //intake(gamepad2.y, gamepad2.a);
 
-            //imprimir ciertos valores para debuggear
+            // Llama al transfer solo si no está en ejecución
+            if (gamepad2.a && !isTransferRunning.get()) {
+                isTransferRunning.set(true);
+                new Thread(() -> { //mandar a llamar el transfer en paralelo
+                    transfer();
+                    isTransferRunning.set(false); // Marca como completado
+                }).start();
+            }
+
+            //imprimir valores para debuggear
             telemetry.addData("Runtime", runtime.seconds());
             telemetry.addData("Riel", Intake.getCurrentPosition());
             telemetry.addData("Muñeca outtake:", Outtake.getCurrentPosition());
+            telemetry.addData("Elevador:", Elevador.getCurrentPosition());
+            telemetry.addData("Muñeca intake:", IntakeWrist.getCurrentPosition());
             telemetry.update();
         }
     }
@@ -109,21 +110,24 @@ public class Plesiov1punto4 extends LinearOpMode {
         DelanteDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         AtrasIz.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         AtrasDe.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
         Outtake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         Intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        Elevador.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        IntakeWrist.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
     //se configuran los encoders para poder acceder a las lecturas y configurar limites
     public void resetEncoders() {
         Intake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        ElevadorIz.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        ElevadorDe.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        Elevador.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         Outtake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        IntakeWrist.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         Intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        ElevadorIz.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        ElevadorDe.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        Elevador.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         Outtake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        IntakeWrist.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
     /*-------------AQUI INICIAN FUNCIONES DE MOVIMIENTO EN EL ROBOT-----------------*/
@@ -131,7 +135,7 @@ public class Plesiov1punto4 extends LinearOpMode {
     /*-------------CHASIS-----------------*/
     //funcion de movimiento en chasis.
     //Parametros: joystick del valor en x, en y, y de la rotacion. Valor maximo de potencia que se aplica a motores
-    public void chasis(double x, double y, double rx, double maxPow) {
+    public void chassis(double x, double y, double rx, double maxPow) {
         //formula de movimiento mecanum almacenado en variable
         double powDelanteIzquierda = (y + x + rx);
         double powAtrasIzquierda = (y - x + rx);
@@ -156,27 +160,13 @@ public class Plesiov1punto4 extends LinearOpMode {
     //funcion de control del elevador. con cada boton se prenden dos motores
     public void elevador(boolean up, boolean down) {
         if (up) {
-            ElevadorIz.setPower(-1);
-            ElevadorDe.setPower(-1);
+            Elevador.setPower(-1);
         } else if (down) {
-            ElevadorIz.setPower(1);
-            ElevadorDe.setPower(1);
+            Elevador.setPower(1);
         } else {
-            ElevadorIz.setPower(0);
-            ElevadorDe.setPower(0);
+            Elevador.setPower(0);
         }
     }
-
-    //funcion de garra de outtake con dos botones
-    /*public void outtake(boolean open, boolean close) {
-        if (open) {
-            ServoOuttake.setPower(-1);
-        } else if (close) {
-            ServoOuttake.setPower(1);
-        } else {
-            ServoOuttake.setPower(0);
-        }
-    }*/
 
     //funcion para abrir/cerrar la garra del intake con un solo boton
     public void outtakeToggle(boolean button) { //parametro del boton que se usara
@@ -197,21 +187,16 @@ public class Plesiov1punto4 extends LinearOpMode {
 
     //funcion de la muneca del intake. se controla con un joystick
     public void intakeWrist(double y) {
-        if(y > 0.85) return;
-
-        Brazo.setPower(y);
-    }
-
-    //control de la garra del intake con dos botones
-    /*public void intake(boolean open, boolean close) {
-        if (open) {
-            Muñeca.setPower(-1);
-        } else if (close) {
-            Muñeca.setPower(1);
-        } else {
-            Muñeca.setPower(0);
+        if(y < 0.0){
+            IntakeWrist.setPower(-0.4);
         }
-    }*/
+        else if(y > 0.0){
+            IntakeWrist.setPower(0.5);
+        }
+        else{
+            IntakeWrist.setPower(0.0);
+        }
+    }
 
     //funcion para abrir/cerrar la garra del intake con un solo boton
     public void intakeToggle(boolean button) { //parametro del boton que se usara
@@ -232,20 +217,6 @@ public class Plesiov1punto4 extends LinearOpMode {
 
     //funcion de movimiento del intake, con dos botones
     public void riel(boolean forward, boolean backward) {
-        int rielCurrentPos = Intake.getCurrentPosition();
-
-        //si presionas el boton de adelante pero se pasa de la distancia maxima
-        if(forward && rielCurrentPos < maxEncoderRiel){
-            Intake.setPower(0);
-            return; //finalizar la funcion aqui
-        }
-
-        if(forward && rielCurrentPos > -10){
-            Brazo.setPower(-0.4);
-            //sleep(100);
-            //Brazo.setPower(0);
-        }
-
         if (forward) {
             Intake.setPower(-1);
         } else if (backward) {
@@ -255,152 +226,97 @@ public class Plesiov1punto4 extends LinearOpMode {
         }
     }
 
-    public void transfer(boolean button) {
-        //cambiar estados para q se active si se presiona una sola vez
-        if(button && !transferButtonState){
-            transferButtonState=true;
-        }
-        if(!button){
-            transferButtonState=false;
-        }
-
-        //seguridad. si activas el transfer pero el outtake ya esta abajo, subirlo
-        if(transferButtonState && Outtake.getCurrentPosition() == 0){
-            Outtake.setTargetPosition(-100);
-            Outtake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            Outtake.setPower(0.8);
-
-            while (opModeIsActive() && Outtake.isBusy()) {
-                telemetry.addData("Encoder Outtake:", Outtake.getCurrentPosition());
-                telemetry.update();
-            }
-
-            Outtake.setPower(0);
-            Outtake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        }
-
-        if(transferButtonState){
-            Muñeca.setPosition(0.55); //cerrar intake (apretao)
-
-
-            //tod0 este bloque es para mover el riel a su posicion inicial
-            Intake.setTargetPosition(0);
-            Intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            Intake.setPower(0.9);
-
-            while (opModeIsActive() && Intake.isBusy()) {
-                telemetry.addData("Encoder Riel:", Intake.getCurrentPosition());
-                telemetry.update();
-            }
-
-            Intake.setPower(0);
-            Intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-
-            Intake.setTargetPosition(-120);
-            Intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            Intake.setPower(0.9);
-
-            while (opModeIsActive() && Intake.isBusy()) {
-                telemetry.addData("Encoder Riel:", Intake.getCurrentPosition());
-                telemetry.update();
-            }
-
-            Intake.setPower(0);
-            Intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-
-            Brazo.setPower(0.675);
-            sleep(1950); //bajar muneca de intake
-
-            //Brazo.setPower(-0.5);
-            //sleep(180);
-            //Brazo.setPower(0.5);
-            //sleep(180);
-
-            Muñeca.setPosition(0.55); //seguir apretando
-            Brazo.setPower(0);
-
-            ServoOuttake.setPosition(0.35); //abrir ligeramente el outtake
-
-
-            //tod0 este bloque es para mover la muneca del outtake a su pos inicial (cerrado)
-            Outtake.setTargetPosition(0);
-            Outtake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            sleep(800);
-            Outtake.setPower(0.25);
-
-            while (opModeIsActive() && Outtake.isBusy()) {
-                telemetry.addData("Encoder Outtake:", Outtake.getCurrentPosition());
-                telemetry.update();
-            }
-
-            Outtake.setPower(0);
-            Outtake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-
-            Muñeca.setPosition(0.35); //abrir ligeramente intake
-
-            ServoOuttake.setPosition(0.18); //cerrar el outtake
-
-            Intake.setTargetPosition(-200);
-            Intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            Intake.setPower(0.9);
-
-            while (opModeIsActive() && Intake.isBusy()) {
-                telemetry.addData("Encoder Riel:", Intake.getCurrentPosition());
-                telemetry.update();
-            }
-
-            Intake.setPower(0);
-            Intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-
-            //tod0 este bloque es para abrir la muneca
-            /*Outtake.setTargetPosition(-120);
-            Outtake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            sleep(500);
-            Outtake.setPower(0.6);
-
-            while (opModeIsActive() && Outtake.isBusy()) {
-                telemetry.addData("Encoder Outtake:", Outtake.getCurrentPosition());
-                telemetry.update();
-            }
-
-            Outtake.setPower(0);
-            Outtake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);*/
-
-
-            Muñeca.setPosition(0.55); //cerrar intake
-
-
-            intakeMode = false; //cambiar de estado las garras para que se queden cerradas
-            outtakeMode = false;
-        }
-    }
-
     //funcion de la muneca del outtake(motor core hex). se controla con el joystick
-    public void outtakeWrist(double y, double maxPow) {
-        int outtakeCurrentPos = Outtake.getCurrentPosition();
-
-        //si presionas el boton de adelante pero se pasa de la distancia maxima
-//        if(y < 0.0 && outtakeCurrentPos < maxOuttake){
-//            Outtake.setPower(0);
-//            return; //finalizar la funcion aqui
-//        }
-
+    public void outtakeWrist(double y) {
         if(y < 0.0){
-            Outtake.setPower(-0.3);
+            Outtake.setPower(0.5);
         }
         else if(y > 0.0){
-            Outtake.setPower(0.5);
+            Outtake.setPower(-0.5);
         }
         else{
             Outtake.setPower(0.0);
         }
-        //double outtakePower = Math.max(-maxPow, Math.min(y, maxPow));
+    }
 
-        //Outtake.setPower(y);
+    public void transfer() {
+        Outtake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        Intake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        motorsSetPower(0, 0, 0, 0);
+
+        Muñeca.setPosition(0.55); //cerrar intake (apretao)
+        sleep(50);
+
+        autoRiel(-200, 0.5); //acomodar riel
+
+        autoIntakeWrist(0, 0.85); //bajar muneca
+
+        ServoOuttake.setPosition(outtake_open);
+        autoOuttakeWristPos(-145, 0.8); //bajar muneca
+        ServoOuttake.setPosition(outtake_close);
+
+        Muñeca.setPosition(intake_open);
+        sleep(50);
+
+        autoRiel(-550, 0.95); //acomodar riel
+
+        autoOuttakeWristPos(-10, 0.8);
+
+        Muñeca.setPosition(intake_close);
+        sleep(50);
+
+        intakeMode = false; //cambiar de estado las garras para que se queden cerradas
+        outtakeMode = false;
+    }
+
+    public void autoRiel(int pos, double pow){
+        Intake.setTargetPosition(pos);
+        Intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Intake.setPower(pow);
+
+        while (opModeIsActive() && Intake.isBusy()) {
+            telemetry.addData("Encoder Riel:", Intake.getCurrentPosition());
+            telemetry.update();
+        }
+
+        Intake.setPower(0);
+        Intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public void autoIntakeWrist(int pos, double pow){
+        IntakeWrist.setTargetPosition(pos);
+        IntakeWrist.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        IntakeWrist.setPower(pow);
+
+        while (opModeIsActive() && IntakeWrist.isBusy()) {
+            telemetry.addData("Encoder muñeca:", IntakeWrist.getCurrentPosition());
+            telemetry.update();
+        }
+
+        IntakeWrist.setPower(0);
+        IntakeWrist.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public void autoOuttakeWristPos(int pos, double pow){
+        Outtake.setTargetPosition(pos);
+        Outtake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Outtake.setPower(pow);
+
+        while (opModeIsActive() && Outtake.isBusy()) {
+            telemetry.addData("Encoder muñeca:", Outtake.getCurrentPosition());
+            telemetry.update();
+        }
+
+        Outtake.setPower(0);
+        Outtake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public void motorsSetPower (double powDeIz, double powDeDe, double powAtIz, double powAtDe) {
+        DelanteIz.setPower(powDeIz);
+        DelanteDe.setPower(powDeDe);
+        AtrasIz.setPower(powAtIz);
+        AtrasDe.setPower(powAtDe);
     }
 }
 
